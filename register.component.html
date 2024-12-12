@@ -1,0 +1,114 @@
+<div class="register-container">
+    <div *ngIf="isLoading" class="loading-overlay">
+      <div class="loader"></div>
+    </div>
+  
+    <div class="form-container">
+      <h2>Register</h2>
+      <form [formGroup]="registerForm" (ngSubmit)="handleSubmit()">
+        <div class="input-group">
+          <label for="firstName">First Name</label>
+          <input
+            formControlName="firstName"
+            id="firstName"
+            placeholder="John"
+            (input)="handleChange($event)"
+            required
+          />
+        </div>
+  
+        <div class="input-group">
+          <label for="lastName">Last Name</label>
+          <input
+            formControlName="lastName"
+            id="lastName"
+            placeholder="Doe"
+            (input)="handleChange($event)"
+            required
+          />
+        </div>
+  
+        <div class="input-group">
+          <label for="email">Email</label>
+          <input
+            formControlName="email"
+            id="email"
+            placeholder="example@domain.com"
+            (input)="handleChange($event)"
+            required
+          />
+        </div>
+  
+        <div class="input-group">
+          <label for="phoneNumber">Phone Number</label>
+          <input
+            formControlName="phoneNumber"
+            id="phoneNumber"
+            placeholder="9999999999"
+            maxlength="10"
+            (input)="handleChange($event)"
+            required
+          />
+        </div>
+  
+        <div class="input-group">
+          <label for="aadharId">Aadhar ID</label>
+          <input
+            formControlName="aadharId"
+            id="aadharId"
+            placeholder="0000 0000 0000"
+            maxlength="14"
+            (input)="handleChange($event)"
+            required
+          />
+        </div>
+  
+        <div class="input-group">
+          <label for="password">Password</label>
+          <input
+            formControlName="password"
+            id="password"
+            type="password"
+            placeholder="********"
+            required
+          />
+        </div>
+  
+        <div class="input-group">
+          <label for="confirmPassword">Confirm Password</label>
+          <input
+            formControlName="confirmPassword"
+            id="confirmPassword"
+            type="password"
+            placeholder="********"
+            required
+          />
+        </div>
+  
+        <password-validator
+          [password]="registerForm.value.password"
+          [confirmedPassword]="registerForm.value.confirmPassword"
+        ></password-validator>
+  
+        <div class="error-message" *ngIf="error">{{ error }}</div>
+        <div class="success-message" *ngIf="message">{{ message }}</div>
+  
+        <button type="submit" [disabled]="registerForm.invalid">Register</button>
+      </form>
+  
+      <div *ngIf="showOtpSplash">
+        <h3>OTP Verification</h3>
+        <input
+          [(ngModel)]="otp"
+          placeholder="Enter OTP"
+          required
+        />
+        <button (click)="handleOtpSubmit()">Verify OTP</button>
+      </div>
+  
+      <div *ngIf="userId">
+        <button (click)="handleCopy()">Copy User ID</button>
+      </div>
+    </div>
+  </div>
+  
