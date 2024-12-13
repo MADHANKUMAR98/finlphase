@@ -1,0 +1,221 @@
+// Install Angular Material first: ng add @angular/material
+// Add Angular Material modules in app.module.ts
+import { NgModule } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
+import { MatTableModule } from '@angular/material/table';
+
+@NgModule({
+  imports: [MatButtonModule, MatCardModule, MatTableModule],
+  exports: [MatButtonModule, MatCardModule, MatTableModule],
+})
+export class MaterialModule {}
+
+// payment-page.component.ts
+import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
+
+@Component({
+  selector: 'app-payment-page',
+  templateUrl: './payment-page.component.html',
+  styleUrls: ['./payment-page.component.css']
+})
+export class PaymentPageComponent implements OnInit {
+  userId!: string;
+  readingId!: string;
+  bill: any = {};
+  paymentLink: string = '';
+  loading: boolean = true;
+
+  constructor(private route: ActivatedRoute, private http: HttpClient) {}
+
+  ngOnInit(): void {
+    this.userId = this.route.snapshot.paramMap.get('userId')!;
+    this.readingId = this.route.snapshot.paramMap.get('readingId')!;
+    this.bill = history.state.bill;
+
+    this.initiatePayment();
+  }
+
+  private initiatePayment(): void {
+    this.http
+      .post<any>(`/payment/process/${this.userId}/${this.readingId}`, {})
+      .subscribe(
+        (response) => {
+          this.paymentLink = response.paymentLink;
+          this.loading = false;
+        },
+        (error) => {
+          console.error('Error initiating payment:', error);
+          this.loading = false;
+        }
+      );
+  }
+}
+
+// payment-page.component.html
+<div class="container">
+  <mat-card class="payment-card">
+    <h1 class="mat-title">Payment Confirmation</h1>
+    <table mat-table>
+      <tr>
+        <td><b>User ID:</b></td>
+        <td>{{ bill.userId }}</td>
+      </tr>
+      <tr>
+        <td><b>Connection Type:</b></td>
+        <td>{{ bill.connectionType }}</td>
+      </tr>
+      <tr>
+        <td><b>Reading Date:</b></td>
+        <td>{{ bill.readingDate | date }}</td>
+      </tr>
+      <tr>
+        <td><b>Units Consumed:</b></td>
+        <td>{{ bill.unitsConsumed }}</td>
+      </tr>
+      <tr>
+        <td><b>Bill No:</b></td>
+        <td>{{ bill.billId }}</td>
+      </tr>
+      <tr>
+        <td><b>Amount:</b></td>
+        <td class="amount">₹{{ bill.amount }}</td>
+      </tr>
+    </table>
+
+    <div *ngIf="loading" class="loading">Loading payment link...</div>
+    <a
+      *ngIf="!loading && paymentLink"
+      [href]="paymentLink"
+      mat-raised-button
+      color="primary"
+    >
+      Click here to pay
+    </a>
+  </mat-card>
+</div>
+
+// payment-page.component.css
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: url('assets/bg-2.jpeg') no-repeat center center fixed;
+  background-size: cover;
+}
+
+.payment-card {
+  padding: 20px;
+  max-width: 400px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.amount {
+  color: #68e534;
+  font-weight: bold;
+}
+
+// payment-success.component.ts
+import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
+
+@Component({
+  selector: 'app-payment-success',
+  templateUrl: './payment-success.component.html',
+  styleUrls: ['./payment-success.component.css']
+})
+export class PaymentSuccessComponent implements OnInit {
+  billId!: string;
+  message: string = '';
+  error: string = '';
+
+  constructor(
+    private route: ActivatedRoute,
+    private router: Router,
+    private http: HttpClient
+  ) {}
+
+  ngOnInit(): void {
+    this.billId = this.route.snapshot.paramMap.get('billId')!;
+    this.fetchPaymentStatus();
+  }
+
+  private fetchPaymentStatus(): void {
+    const paymentId = new URLSearchParams(window.location.search).get(
+      'razorpay_payment_id'
+    );
+
+    this.http
+      .get<any>(`/payment/redirect`, {
+        params: { payment_id: paymentId!, Order_id: this.billId },
+      })
+      .subscribe(
+        (response) => {
+          const paymentStatus = response.paymentStatus;
+          this.message =
+            paymentStatus === 'paid'
+              ? 'Payment Successful! Redirecting...'
+              : 'Payment status unknown.';
+
+          if (paymentStatus === 'paid') {
+            setTimeout(() => {
+              this.router.navigate(['/DisplayBills']);
+            }, 3000);
+          }
+        },
+        (error) => {
+          this.error = 'Error processing payment.';
+          console.error(error);
+        }
+      );
+  }
+}
+
+// payment-success.component.html
+<div class="success-container">
+  <mat-card class="success-card">
+    <div *ngIf="message">
+      <h1 class="mat-title text-success">{{ message }}</h1>
+      <p class="redirect">Redirecting to your bills...</p>
+    </div>
+    <div *ngIf="error">
+      <h1 class="mat-title text-error">Payment Error</h1>
+      <p>{{ error }}</p>
+    </div>
+  </mat-card>
+</div>
+
+// payment-success.component.css
+.success-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: url('assets/bg-2.jpeg') no-repeat center center fixed;
+  background-size: cover;
+}
+
+.success-card {
+  padding: 20px;
+  max-width: 400px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.text-success {
+  color: #68e534;
+  font-weight: bold;
+}
+
+.text-error {
+  color: red;
+}
