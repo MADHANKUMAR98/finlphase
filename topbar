@@ -327,3 +327,244 @@ Each of these components will act as content for the respective routes.
 ---
 
 Let me know if you need further explanation or help with any part! 🚀
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Here's the equivalent Angular code for the **Topbar** component, including the logic and styling adapted from your React code. This solution ensures the **top bar stays fixed**, works with routing (using Angular Router), and avoids page reloads.
+
+---
+
+### **Angular Code Structure**
+
+We assume the following professional folder structure for your Angular 19 project:
+
+```
+src/
+│-- app/
+│   ├── components/
+│   │   ├── topbar/
+│   │   │   ├── topbar.component.ts
+│   │   │   ├── topbar.component.html
+│   │   │   ├── topbar.component.scss
+│   ├── app-routing.module.ts
+│   ├── app.module.ts
+│   ├── services/
+│   │   ├── auth.service.ts
+│   ├── assets/
+│       ├── logo.png
+```
+
+---
+
+### **1. Topbar Component (TypeScript Logic)**  
+**`topbar.component.ts`**
+
+```typescript
+import { Component, OnInit, HostListener } from '@angular/core';
+import { Router } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
+
+@Component({
+  selector: 'app-topbar',
+  templateUrl: './topbar.component.html',
+  styleUrls: ['./topbar.component.scss']
+})
+export class TopbarComponent implements OnInit {
+  isAuthenticated = false;
+  userName = '';
+  isVisible = true;
+  prevScrollPos = window.pageYOffset;
+  isDropdownOpen = false;
+
+  constructor(private authService: AuthService, private router: Router) {}
+
+  ngOnInit(): void {
+    this.isAuthenticated = this.authService.isAuthenticated();
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (user && user.userId) {
+      this.userName = user.firstName;
+    }
+  }
+
+  @HostListener('window:scroll', [])
+  onScroll(): void {
+    const currentScrollPos = window.pageYOffset;
+    this.isVisible = this.prevScrollPos > currentScrollPos || currentScrollPos < 10;
+    this.prevScrollPos = currentScrollPos;
+  }
+
+  toggleDropdown(): void {
+    this.isDropdownOpen = !this.isDropdownOpen;
+  }
+
+  logout(): void {
+    this.authService.logout();
+    this.router.navigate(['/login']);
+  }
+}
+```
+
+---
+
+### **2. Topbar Component Template (HTML)**  
+**`topbar.component.html`**
+
+```html
+<div
+  class="topbar fixed z-50 w-full transition-transform duration-300 ease-in-out"
+  [ngClass]="{ 'translate-y-full': !isVisible }"
+>
+  <div class="backdrop-brightness-50 backdrop-blur-3xl p-2 shadow-lg">
+    <div class="container mx-auto flex justify-between items-center text-white">
+      <!-- Logo and Title -->
+      <div class="flex items-center">
+        <h1 class="text-xl sm:text-2xl p-1 font-bold text-gray-50">
+          <a routerLink="/" class="flex items-center">
+            <img src="assets/logo.png" class="w-8 sm:w-10 mr-2" alt="logo" />
+            TANGEDCO
+          </a>
+        </h1>
+      </div>
+
+      <!-- Dropdown for Mobile -->
+      <div class="flex items-center lg:hidden">
+        <button (click)="toggleDropdown()" class="text-white hover:text-gray-300">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-6 h-6">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Navbar Items -->
+      <nav class="hidden lg:flex space-x-10">
+        <a routerLink="/" routerLinkActive="active" class="nav-link">Home</a>
+        <a routerLink="/DisplayBills" routerLinkActive="active" class="nav-link">Pay Bills</a>
+        <a routerLink="/MeterReadingDisplay" routerLinkActive="active" class="nav-link">Past Readings</a>
+        <a routerLink="/CalculateBills" routerLinkActive="active" class="nav-link">Billing Math</a>
+      </nav>
+
+      <!-- User Actions -->
+      <div class="hidden lg:flex items-center space-x-6">
+        <span class="font-bold">{{ userName }}</span>
+        <ng-container *ngIf="!isAuthenticated; else loggedIn">
+          <a routerLink="/login" class="hover:text-white">Login</a> /
+          <a routerLink="/register" class="hover:text-white">Register</a>
+        </ng-container>
+        <ng-template #loggedIn>
+          <button (click)="logout()" class="logout-button">Logout</button>
+        </ng-template>
+        <button class="hover:text-white">தமிழ்</button>
+      </div>
+    </div>
+
+    <!-- Mobile Dropdown Menu -->
+    <div class="lg:hidden" [ngClass]="{ 'max-h-96': isDropdownOpen, 'max-h-0': !isDropdownOpen }">
+      <a routerLink="/" class="block nav-link-mobile" (click)="toggleDropdown()">Home</a>
+      <a routerLink="/DisplayBills" class="block nav-link-mobile" (click)="toggleDropdown()">Pay Bills</a>
+      <a routerLink="/MeterReadingDisplay" class="block nav-link-mobile" (click)="toggleDropdown()">Past Readings</a>
+      <a routerLink="/CalculateBills" class="block nav-link-mobile" (click)="toggleDropdown()">Billing Math</a>
+      <div class="text-center border-t mt-2 pt-2">
+        <span>{{ userName }}</span>
+        <ng-container *ngIf="!isAuthenticated; else mobileLoggedIn">
+          <a routerLink="/login" class="hover:text-white" (click)="toggleDropdown()">Login</a> /
+          <a routerLink="/register" class="hover:text-white" (click)="toggleDropdown()">Register</a>
+        </ng-container>
+        <ng-template #mobileLoggedIn>
+          <button (click)="logout()" class="logout-button">Logout</button>
+        </ng-template>
+      </div>
+    </div>
+  </div>
+</div>
+```
+
+---
+
+### **3. Topbar Component Styles (SCSS)**  
+**`topbar.component.scss`**
+
+```scss
+.topbar {
+  transition: transform 0.3s ease-in-out;
+  &.translate-y-full {
+    transform: translateY(-100%);
+  }
+}
+
+.nav-link {
+  @apply hover:text-white text-[#bebebe] transition duration-300;
+  &.active {
+    @apply border-b-4 border-white text-white;
+  }
+}
+
+.nav-link-mobile {
+  @apply block py-2 text-white hover:text-gray-300 transition duration-300;
+}
+
+.logout-button {
+  @apply bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded-full shadow-lg transition duration-300;
+}
+
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+```
+
+---
+
+### **4. AuthService for Authentication**  
+**`auth.service.ts`**
+
+```typescript
+import { Injectable } from '@angular/core';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class AuthService {
+  isAuthenticated(): boolean {
+    return !!localStorage.getItem('user');
+  }
+
+  logout(): void {
+    localStorage.removeItem('user');
+  }
+}
+```
+
+---
+
+### **5. App Routing**  
+Ensure your `app-routing.module.ts` is configured with routes for pages like Home, Display Bills, etc.
+
+---
+
+### Key Notes:
+1. **`routerLink`** is used to navigate pages without refreshing the site.
+2. **Dropdown Menu**: Uses a `toggleDropdown()` function to expand/collapse.
+3. **Responsive Design**: Mobile dropdown and large-screen navbar are implemented.
+4. **Scroll Behavior**: Tracks scroll position and hides the topbar when scrolling down.
+5. **Authentication**: Uses an `AuthService` to manage login/logout.
+
+Let me know if you need further customizations! 🚀
