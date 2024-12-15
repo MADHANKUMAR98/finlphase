@@ -1,0 +1,329 @@
+Below is the **Topbar** React component converted into an **Angular** component, including the relevant TypeScript logic, HTML structure, and CSS styles.
+
+### Project Assumptions:
+1. **Angular CLI** is installed.
+2. Components, assets, and routing structure are already set up.
+3. Replace React `NavLink` with Angular's `RouterLink`.
+
+---
+
+### 1. Create the `topbar` Component
+
+Run the following command:
+```bash
+ng generate component components/topbar
+```
+
+This generates the `topbar` component under `src/app/components/topbar`.
+
+---
+
+### 2. Code for `topbar.component.ts`
+Replace the contents of `topbar.component.ts` with this:
+
+```typescript
+import { Component, OnInit, HostListener } from '@angular/core';
+import { Router } from '@angular/router';
+
+@Component({
+  selector: 'app-topbar',
+  templateUrl: './topbar.component.html',
+  styleUrls: ['./topbar.component.css']
+})
+export class TopbarComponent implements OnInit {
+  isAuthenticated: boolean = false;
+  isVisible: boolean = true;
+  isDropdownOpen: boolean = false;
+  userName: string = '';
+  prevScrollPos: number = window.pageYOffset;
+
+  constructor(private router: Router) {}
+
+  ngOnInit(): void {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      const user = JSON.parse(storedUser);
+      this.userName = user?.firstName || '';
+      this.isAuthenticated = !!user?.userId;
+    }
+  }
+
+  @HostListener('window:scroll', [])
+  onWindowScroll(): void {
+    const currentScrollPos = window.pageYOffset;
+    this.isVisible = this.prevScrollPos > currentScrollPos || currentScrollPos < 10;
+    this.prevScrollPos = currentScrollPos;
+  }
+
+  toggleDropdown(): void {
+    this.isDropdownOpen = !this.isDropdownOpen;
+  }
+
+  logout(): void {
+    localStorage.removeItem('user');
+    this.isAuthenticated = false;
+    this.router.navigate(['/login']);
+  }
+}
+```
+
+---
+
+### 3. Code for `topbar.component.html`
+Replace the contents of `topbar.component.html` with this:
+
+```html
+<div [ngClass]="{'transform -translate-y-full': !isVisible}" class="fixed z-50 w-full transition-transform duration-300 ease-in-out">
+  <div class="backdrop-brightness-50 backdrop-blur-3xl p-2 shadow-lg">
+    <div class="container mx-auto flex justify-between items-center text-white">
+      <!-- Logo -->
+      <div class="flex items-center">
+        <h1 class="text-xl sm:text-2xl p-1 font-bold text-trueGray-50">
+          <a routerLink="/" class="flex items-center">
+            <img src="assets/logo.png" class="w-8 sm:w-10 mr-2" alt="logo" />
+            TANGEDCO
+          </a>
+        </h1>
+      </div>
+
+      <!-- Mobile Menu -->
+      <div class="flex items-center space-x-4 lg:hidden">
+        <button (click)="toggleDropdown()" class="text-white hover:text-gray-300 transition duration-300">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-6 h-6">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Desktop Menu -->
+      <div class="hidden lg:flex space-x-10 items-center">
+        <a routerLink="/" routerLinkActive="active" class="hover:text-white transition duration-300">Home</a>
+        <a routerLink="/DisplayBills" routerLinkActive="active" class="hover:text-white transition duration-300">Pay Bills</a>
+        <a routerLink="/MeterReadingDisplay" routerLinkActive="active" class="hover:text-white transition duration-300">Past Readings</a>
+        <a routerLink="/CalculateBills" routerLinkActive="active" class="hover:text-white transition duration-300">Billing Math</a>
+      </div>
+
+      <!-- Auth & User -->
+      <div class="hidden lg:flex items-center space-x-6">
+        <span class="font-bold hover:text-gray-200">{{ userName }}</span>
+        <ng-container *ngIf="!isAuthenticated">
+          <a routerLink="/login" class="hover:text-white transition duration-300">Login</a>
+          <a routerLink="/register" class="hover:text-white transition duration-300">/ Register</a>
+        </ng-container>
+        <button *ngIf="isAuthenticated" (click)="logout()" class="bg-lightBlue-600 hover:bg-lightBlue-700 text-white py-1 px-3 rounded-full transition">
+          Logout
+        </button>
+      </div>
+    </div>
+
+    <!-- Dropdown Menu (Mobile) -->
+    <div [ngClass]="{'max-h-0': !isDropdownOpen, 'max-h-96': isDropdownOpen}" class="lg:hidden transition-max-height duration-500 overflow-hidden">
+      <div class="px-4 text-white">
+        <a routerLink="/" class="block py-2 hover:text-white" (click)="toggleDropdown()">Home</a>
+        <a routerLink="/DisplayBills" class="block py-2 hover:text-white" (click)="toggleDropdown()">Pay Bills</a>
+        <a routerLink="/MeterReadingDisplay" class="block py-2 hover:text-white" (click)="toggleDropdown()">Past Readings</a>
+        <a routerLink="/CalculateBills" class="block py-2 hover:text-white" (click)="toggleDropdown()">Billing Math</a>
+
+        <!-- Auth & User for Mobile -->
+        <div class="flex justify-between items-center border-t pt-4 mt-2">
+          <span class="font-bold">{{ userName }}</span>
+          <ng-container *ngIf="!isAuthenticated">
+            <a routerLink="/login" class="hover:text-white" (click)="toggleDropdown()">Login</a>
+            <a routerLink="/register" class="hover:text-white" (click)="toggleDropdown()">/ Register</a>
+          </ng-container>
+          <button *ngIf="isAuthenticated" (click)="logout()" class="bg-lightBlue-600 hover:bg-lightBlue-700 text-white py-1 px-3 rounded-full transition">
+            Logout
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+```
+
+---
+
+### 4. Code for `topbar.component.css`
+Replace the contents of `topbar.component.css` with this:
+
+```css
+/* Topbar Transition */
+.transform {
+  transform: translateY(0);
+}
+
+.-translate-y-full {
+  transform: translateY(-100%);
+}
+
+.transition-transform {
+  transition: transform 0.3s ease-in-out;
+}
+
+.backdrop-brightness-50 {
+  backdrop-filter: brightness(50%);
+}
+
+.backdrop-blur-3xl {
+  backdrop-filter: blur(16px);
+}
+
+.active {
+  border-bottom: 4px solid #ffffff;
+  color: #ffffff;
+}
+
+.max-h-0 {
+  max-height: 0;
+}
+
+.max-h-96 {
+  max-height: 24rem;
+}
+
+.transition-max-height {
+  transition: max-height 0.5s ease-in-out;
+}
+```
+
+---
+
+### 5. Styling Notes
+- I have kept the Tailwind-style class names for simplicity and adapted to standard CSS where needed.
+- Replace `assets/logo.png` with the correct path to your logo file.
+
+---
+
+### 6. Add Routes in `app-routing.module.ts`
+Make sure your routes match the navigation links:
+```typescript
+const routes: Routes = [
+  { path: '', component: HomeComponent },
+  { path: 'DisplayBills', component: DisplayBillsComponent },
+  { path: 'MeterReadingDisplay', component: MeterReadingDisplayComponent },
+  { path: 'CalculateBills', component: CalculateBillsComponent },
+  { path: 'login', component: LoginComponent },
+  { path: 'register', component: RegisterComponent },
+];
+```
+
+---
+
+### Result:
+You now have a fully functional `Topbar` component in Angular with:
+1. Responsive styling.
+2. Dropdown menu for mobile.
+3. Authentication logic for login/logout.
+
+
+To ensure that the **Topbar** remains persistent throughout your Angular website, and clicking the menu items changes the content below it without refreshing the page, you need to set up **Angular Routing** correctly.
+
+Here’s how to achieve this behavior:
+
+---
+
+### Steps to Achieve Non-Refreshing Page Navigation
+
+1. **Set Up a Persistent Layout**  
+   Use a **parent component** that contains the `Topbar` at the top and a `<router-outlet>` below it. This `router-outlet` will act as a placeholder where the child components (the menu content) will be rendered dynamically without a full-page refresh.
+
+2. **Modify the `app.component.html`**  
+   Make `Topbar` part of the layout, and place `<router-outlet>` to render child views.
+
+3. **Use `RouterLink`**  
+   Use `routerLink` instead of regular `<a>` tags to enable Angular’s router for navigation.
+
+---
+
+### 1. Layout Setup in `app.component.html`
+
+Replace the content of `app.component.html` with this:
+
+```html
+<app-topbar></app-topbar>
+<div class="container mx-auto mt-4 p-4">
+  <!-- Content will change here dynamically -->
+  <router-outlet></router-outlet>
+</div>
+```
+
+- `<app-topbar>` includes your persistent **Topbar** component.
+- `<router-outlet>` dynamically renders the selected route’s content below the top bar.
+
+---
+
+### 2. Topbar Navigation (Already in Place)
+
+Ensure your `topbar.component.html` links use **Angular’s RouterLink**:
+
+```html
+<a routerLink="/" routerLinkActive="active" class="hover:text-white transition duration-300">Home</a>
+<a routerLink="/DisplayBills" routerLinkActive="active" class="hover:text-white transition duration-300">Pay Bills</a>
+<a routerLink="/MeterReadingDisplay" routerLinkActive="active" class="hover:text-white transition duration-300">Past Readings</a>
+<a routerLink="/CalculateBills" routerLinkActive="active" class="hover:text-white transition duration-300">Billing Math</a>
+```
+
+---
+
+### 3. Define Routes in `app-routing.module.ts`
+
+Ensure your `app-routing.module.ts` file has proper routes defined:
+
+```typescript
+import { NgModule } from '@angular/core';
+import { RouterModule, Routes } from '@angular/router';
+import { HomeComponent } from './pages/home/home.component';
+import { DisplayBillsComponent } from './pages/display-bills/display-bills.component';
+import { MeterReadingDisplayComponent } from './pages/meter-reading-display/meter-reading-display.component';
+import { CalculateBillsComponent } from './pages/calculate-bills/calculate-bills.component';
+
+const routes: Routes = [
+  { path: '', component: HomeComponent },
+  { path: 'DisplayBills', component: DisplayBillsComponent },
+  { path: 'MeterReadingDisplay', component: MeterReadingDisplayComponent },
+  { path: 'CalculateBills', component: CalculateBillsComponent },
+];
+
+@NgModule({
+  imports: [RouterModule.forRoot(routes)],
+  exports: [RouterModule],
+})
+export class AppRoutingModule {}
+```
+
+---
+
+### 4. Set Up Components for Each Page
+
+Ensure you have components for each menu link. For example:
+
+1. **Home**: Run `ng generate component pages/home`
+2. **Display Bills**: Run `ng generate component pages/display-bills`
+3. **Meter Readings**: Run `ng generate component pages/meter-reading-display`
+4. **Calculate Bills**: Run `ng generate component pages/calculate-bills`
+
+Each of these components will act as content for the respective routes.
+
+---
+
+### 5. Verify Behavior
+
+1. Run the application:
+   ```bash
+   ng serve
+   ```
+2. Visit the page in your browser: `http://localhost:4200`.
+
+3. The **Topbar** will remain visible at the top of the page.
+
+4. Clicking on the links in the **Topbar** (e.g., *Home*, *Pay Bills*, etc.) will dynamically load content below the Topbar without refreshing the page.
+
+---
+
+### Why This Works:
+- **`<router-outlet>`** is part of Angular's routing system and renders components dynamically without a page reload.
+- Using `routerLink` instead of regular `<a>` tags ensures that Angular’s router intercepts the navigation, preventing a full-page refresh.
+
+---
+
+Let me know if you need further explanation or help with any part! 🚀
