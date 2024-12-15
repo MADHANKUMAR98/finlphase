@@ -1,0 +1,510 @@
+export default ServiceRegistration;
+
+convert the above code into angular with excellent stylings for best user interface
+
+BLACKBOXAI
+
+Converting the provided React component into an Angular component involves several steps, including setting up the Angular environment, creating the component, and implementing the necessary services and styles. Below is a detailed guide on how to achieve this, along with a sample implementation.
+
+Step 1: Set Up Angular Environment
+Make sure you have Angular CLI installed. If not, you can install it using:
+
+bash
+
+Verify
+
+Open In Editor
+Run
+Copy code
+npm install -g @angular/cli
+Create a new Angular project:
+
+bash
+
+Verify
+
+Open In Editor
+Run
+Copy code
+ng new service-registration-app
+cd service-registration-app
+Step 2: Install Required Packages
+You will need to install some packages for file uploads and dropdowns. For this example, we will use ngx-dropzone for file uploads and ng-select for the dropdown.
+
+bash
+
+Verify
+
+Open In Editor
+Run
+Copy code
+npm install @ng-select/ng-select ngx-dropzone
+Step 3: Create the Service for HTTP Requests
+Create a service to handle HTTP requests:
+
+bash
+
+Verify
+
+Open In Editor
+Run
+Copy code
+ng generate service services/axios
+In axios.service.ts, implement the HTTP request logic:
+
+typescript
+
+Verify
+
+Open In Editor
+Run
+Copy code
+import { Injectable } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Observable } from 'rxjs';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class AxiosService {
+  constructor(private http: HttpClient) {}
+
+  registerConnection(url: string, formData: FormData, token: string): Observable<any> {
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+    return this.http.post(url, formData, { headers });
+  }
+}
+Step 4: Create the Component
+Generate the component for service registration:
+
+bash
+
+Verify
+
+Open In Editor
+Run
+Copy code
+ng generate component service-registration
+In service-registration.component.ts, implement the logic:
+
+typescript
+
+Verify
+
+Open In Editor
+Run
+Copy code
+import { Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { AxiosService } from '../services/axios.service';
+import { Router } from '@angular/router';
+import citiesData from '../assets/cities.json';
+
+@Component({
+  selector: 'app-service-registration',
+  templateUrl: './service-registration.component.html',
+  styleUrls: ['./service-registration.component.css']
+})
+export class ServiceRegistrationComponent implements OnInit {
+  registrationForm: FormGroup;
+  loading = false;
+  userId: string | null = null;
+  cities = citiesData.map(city => ({ label: city, value: city }));
+
+  constructor(
+    private fb: FormBuilder,
+    private axiosService: AxiosService,
+    private router: Router
+  ) {
+    this.registrationForm = this.fb.group({
+      connectionType: ['household', Validators.required],
+      address: ['', Validators.required],
+      city: [null, Validators.required],
+      loadRequired: ['', Validators.required],
+      phase: ['', Validators.required],
+      applicantPhoto: [null],
+      propertyTaxReport: [null],
+      businessName: [''],
+      businessType: [''],
+      sqMeter: [''],
+      ownershipProof: [null]
+    });
+  }
+
+  ngOnInit(): void {
+    const storedUser  = JSON.parse(localStorage.getItem('user') || '{}');
+    this.userId = storedUser .userId || null;
+  }
+
+  onFileChange(event: any, controlName: string) {
+    const file = event.target.files[0];
+    this.registrationForm.patchValue({ [controlName]: file });
+  }
+
+  async handleRegister() {
+    if (this.registrationForm.invalid) {
+      return;
+    }
+
+    this.loading = true;
+    const formData = new FormData();
+    const { connectionType, businessName, businessType, sqMeter } = this.registrationForm.value;
+
+    formData.append('userId', this.userId!);
+    formData.append('address', `${this.registrationForm.value.address}, ${this.registrationForm.value.city?.label || ''}`);
+    formData.append('load_required', this.registrationForm.value.loadRequired);
+    formData.append('phase', this.registrationForm.value.phase);
+    formData.append('applicant_photo', this.registrationForm.value.applicantPhoto);
+    formData.append('property_tax_report', this.registrationForm.value.propertyTaxReport);
+
+    let url = 'http://localhost:8080/connections/household';
+
+    if (connectionType === 'commercial') {
+      formData.append('business_name', businessName);
+      formData.append('business_type', businessType);
+      formData.append('sq_meter', sqMeter);
+      formData.append('ownership_proof', this.registrationForm.value.ownershipProof);
+      url = 'http://localhost:8080/connections/commercial';
+    }
+
+    try {
+      const token = localStorage.getItem('token')!;
+      const response = await this.axiosService.registerConnection(url, formData, token).toPromise();
+
+      if (response.payment_url) {
+        this.router.navigate(['/ApplicationConfirmation'], {
+          state: {
+            paymentUrl: response.payment
+You
+
+continue the code
+
+BLACKBOXAI
+
+Certainly! Let's continue from where we left off in the handleRegister method of the ServiceRegistrationComponent. After successfully registering the connection, we will navigate to the confirmation page with the necessary data.
+
+Continuing the handleRegister Method
+typescript
+
+Verify
+
+Open In Editor
+Run
+Copy code
+            paymentUrl: response.payment_url,
+            referenceNumber: response.reference_number,
+            userId: this.userId,
+            address: `${this.registrationForm.value.address}, ${this.registrationForm.value.city?.label || ''}`,
+            loadRequired: this.registrationForm.value.loadRequired,
+            phase: this.registrationForm.value.phase,
+            connectionType: connectionType,
+            businessName: businessName,
+            businessType: businessType,
+            sqMeter: sqMeter,
+          },
+        });
+      } else {
+        alert('Registration failed');
+      }
+    } catch (error) {
+      console.error('There was an error registering the connection!', error);
+      alert('Registration failed');
+    } finally {
+      this.loading = false;
+    }
+  }
+}
+Step 5: Create the HTML Template
+Now, let's create the HTML template for the component in service-registration.component.html. This will include the form fields, file upload areas, and styling.
+
+html
+
+Verify
+
+Open In Editor
+Run
+Copy code
+<div class="relative h-screen overflow-scroll main-content bg-cover bg-center">
+  <div *ngIf="loading" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center">
+    <div class="loader"></div>
+  </div>
+  <img src="assets/powerlines.jpg" alt="background" class="bg-full overflow-hidden brightness-50 hue-rotate-15 max-h-screen" />
+  <div class="relative h-max max-w-2xl rounded mx-auto p-8 backdrop-blur-2xl backdrop-brightness-50 border border-[#555555] mb-10">
+    <div class="flex items-center mb-10 justify-between">
+      <h2 class="text-3xl font-bold text-gray-300">Service Registration</h2>
+      <img src="assets/logo.png" alt="logo" class="w-36 h-36" />
+    </div>
+
+    <form [formGroup]="registrationForm" (ngSubmit)="handleRegister()" class="max-w-2xl mx-auto space-y-6">
+      <div class="flex flex-col">
+        <label class="block text-gray-300 text-sm text-left font-bold mb-2">User  ID:</label>
+        <div class="appearance-none rounded-sm border transition-all border-gray-200 duration-200 bg-transparent w-full py-2 px-3 text-gray-300 leading-tight">
+          {{ userId }}
+        </div>
+      </div>
+      <div class="flex flex-col">
+        <label class="block text-gray-300 text-sm text-left font-bold mb-2">Connection Type:</label>
+        <select formControlName="connectionType" class="appearance-none rounded-sm border transition-all bg-transparent border-gray-200 duration-200 w-full py-2 px-3 text-gray-300 leading-tight">
+          <option value="household">Household</option>
+          <option value="commercial">Commercial</option>
+        </select>
+      </div>
+      <div class="flex flex-col">
+        <label class="block text-gray-300 text-sm text-left font-bold mb-2">Address:</label>
+        <textarea formControlName="address" required class="appearance-none rounded-sm border bg-transparent transition-all border-gray-200 duration-200 w-full py-2 px-3 text-gray-300 leading-tight" placeholder="Enter your address"></textarea>
+      </div>
+      <div class="flex flex-col">
+        <label class="block text-gray-300 text-sm text-left font-bold mb-2">City:</label>
+        <ng-select [items]="cities" bindLabel="label" bindValue="value" formControlName="city" placeholder="Select your city" class="border-gray-200 bg-transparent"></ng-select>
+      </div>
+      <div class="flex flex-col">
+        <label class="block text-gray-300 text-sm text-left font-bold mb-2">Load Required (in kW):</label>
+        <input type="number" step="0.01" formControlName="loadRequired" required class="appearance-none rounded-sm bg-transparent border-gray-200 border transition-all duration-200 w-full py-2 px-3 text-gray-300 leading-tight" placeholder="Enter the load required" />
+      </div>
+      <div class="flex flex-col">
+        <label class="block text-gray-300 text-sm text-left font-bold mb-2">Phase:</label>
+        <input type="number" step="0.01" formControlName="phase" required class="appearance-none rounded-sm border bg-transparent border-gray-200 transition-all duration-200 w-full py-2 px-3
+You
+
+continue
+
+BLACKBOXAI
+
+Certainly! Let's continue with the HTML template for the ServiceRegistrationComponent. We will complete the form fields for file uploads and the submit button.
+
+Continuing the HTML Template
+html
+
+Verify
+
+Open In Editor
+Run
+Copy code
+        text-gray-300 leading-tight" placeholder="Enter the phase" />
+      </div>
+
+      <div class="flex flex-col">
+        <label class="block text-gray-300 text-sm text-left font-bold mb-2">Applicant Photo:</label>
+        <input type="file" (change)="onFileChange($event, 'applicantPhoto')" accept="image/*" class="border-dashed border-2 p-4 rounded-md border-gray-200 transition-all duration-200 cursor-pointer" />
+        <p class="text-center text-gray-300">
+          {{ registrationForm.get('applicantPhoto')?.value?.name || 'Drag & drop a photo here, or click to select a photo' }}
+        </p>
+      </div>
+
+      <div class="flex flex-col">
+        <label class="block text-gray-300 text-sm text-left font-bold mb-2">Property Tax Report:</label>
+        <input type="file" (change)="onFileChange($event, 'propertyTaxReport')" accept="application/pdf" class="border-dashed border-2 p-4 rounded-md border-gray-200 transition-all duration-200 cursor-pointer" />
+        <p class="text-center text-gray-300">
+          {{ registrationForm.get('propertyTaxReport')?.value?.name || 'Drag & drop a property tax report here, or click to select a file' }}
+        </p>
+      </div>
+
+      <div *ngIf="registrationForm.get('connectionType')?.value === 'commercial'">
+        <div class="flex flex-col">
+          <label class="block text-gray-300 text-sm text-left font-bold mb-2">Business Name:</label>
+          <input type="text" formControlName="businessName" required class="appearance-none bg-transparent rounded-sm border transition-all border-gray-200 duration-200 w-full py-2 px-3 text-gray-300 leading-tight" placeholder="Enter the business name" />
+        </div>
+        <div class="flex flex-col">
+          <label class="block text-gray-300 text-sm text-left font-bold mb-2">Business Type:</label>
+          <input type="text" formControlName="businessType" required class="appearance-none bg-transparent rounded-sm border transition-all border-gray-200 duration-200 w-full py-2 px-3 text-gray-300 leading-tight" placeholder="Enter the business type" />
+        </div>
+        <div class="flex flex-col">
+          <label class="block text-gray-300 text-sm text-left font-bold mb-2">Area (in sq meters):</label>
+          <input type="number" step="0.01" formControlName="sqMeter" required class="appearance-none bg-transparent rounded-sm border transition-all border-gray-200 duration-200 w-full py-2 px-3 text-gray-300 leading-tight" placeholder="Enter the area in sq meters" />
+        </div>
+        <div class="flex flex-col">
+          <label class="block text-gray-300 text-sm text-left font-bold mb-2">Ownership Proof:</label>
+          <input type="file" (change)="onFileChange($event, 'ownershipProof')" accept="image/*" class="border-dashed border-2 p-4 rounded-md border-gray-200 transition-all duration-200 cursor-pointer" />
+          <p class="text-center text-gray-300">
+            {{ registrationForm.get('ownershipProof')?.value?.name || 'Drag & drop ownership proof here, or click to select a file' }}
+          </p>
+        </div>
+      </div>
+
+      <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition shadow-xl hover:shadow-none duration-300">
+        Register
+      </button>
+    </form>
+  </div>
+</div>
+Step 6: Add Styles
+You can add styles to service-registration.component.css to enhance the user interface. Here’s an example of some styles you might want to include:
+
+css
+
+Verify
+
+Open In Editor
+Run
+Copy code
+.main-content {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.loader {
+  border: 8px solid #f3f3f3; /* Light grey */
+  border-top: 8px solid #3498db; /* Blue */
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+Step 7: Update
+You
+
+continue
+
+BLACKBOXAI
+
+Certainly! Let's continue by updating the Angular module to include the necessary imports and finalize the setup for the ServiceRegistrationComponent.
+
+Step 7: Update the Angular Module
+You need to ensure that the ReactiveFormsModule and HttpClientModule are imported in your Angular module. Open app.module.ts and make the following changes:
+
+typescript
+
+Verify
+
+Open In Editor
+Run
+Copy code
+import { NgModule } from '@angular/core';
+import { BrowserModule } from '@angular/platform-browser';
+import { ReactiveFormsModule } from '@angular/forms';
+import { HttpClientModule } from '@angular/common/http';
+import { NgSelectModule } from '@ng-select/ng-select'; // Import NgSelectModule
+import { AppComponent } from './app.component';
+import { ServiceRegistrationComponent } from './service-registration/service-registration.component';
+
+@NgModule({
+  declarations: [
+    AppComponent,
+    ServiceRegistrationComponent
+  ],
+  imports: [
+    BrowserModule,
+    ReactiveFormsModule,
+    HttpClientModule,
+    NgSelectModule // Add NgSelectModule here
+  ],
+  providers: [],
+  bootstrap: [AppComponent]
+})
+export class AppModule { }
+Step 8: Add Routing (Optional)
+If you want to navigate to the ApplicationConfirmation component after registration, you need to set up routing. First, generate the confirmation component:
+
+bash
+
+Verify
+
+Open In Editor
+Run
+Copy code
+ng generate component application-confirmation
+Then, set up routing in app-routing.module.ts:
+
+typescript
+
+Verify
+
+Open In Editor
+Run
+Copy code
+import { NgModule } from '@angular/core';
+import { RouterModule, Routes } from '@angular/router';
+import { ServiceRegistrationComponent } from './service-registration/service-registration.component';
+import { ApplicationConfirmationComponent } from './application-confirmation/application-confirmation.component';
+
+const routes: Routes = [
+  { path: '', redirectTo: '/service-registration', pathMatch: 'full' },
+  { path: 'service-registration', component: ServiceRegistrationComponent },
+  { path: 'application-confirmation', component: ApplicationConfirmationComponent }
+];
+
+@NgModule({
+  imports: [RouterModule.forRoot(routes)],
+  exports: [RouterModule]
+})
+export class AppRoutingModule { }
+Step 9: Update the Main App Component
+In your app.component.html, add the router outlet to enable navigation:
+
+html
+
+Verify
+
+Open In Editor
+Run
+Copy code
+<router-outlet></router-outlet>
+Step 10: Final Touches
+Assets: Ensure that the images (powerlines.jpg and logo.png) are placed in the src/assets directory.
+Cities Data: Make sure the cities.json file is correctly placed in the src/assets directory and contains the expected data format.
+Styling: You can further enhance the styles in service-registration.component.css to match your design preferences.
+Example of application-confirmation.component.ts
+Here’s a simple example of what the ApplicationConfirmationComponent might look like:
+
+typescript
+
+Verify
+
+Open In Editor
+Run
+Copy code
+import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
+
+@Component({
+  selector: 'app-application-confirmation',
+  templateUrl: './application-confirmation.component.html',
+  styleUrls: ['./application-confirmation.component.css']
+})
+export class ApplicationConfirmationComponent implements OnInit {
+  paymentUrl: string | null = null;
+  referenceNumber: string | null = null;
+
+  constructor(private router: Router) {}
+
+  ngOnInit(): void {
+    const navigation = this.router.getCurrentNavigation();
+    if (navigation && navigation.extras.state) {
+      this.paymentUrl = navigation.extras.state.paymentUrl;
+      this.referenceNumber = navigation.extras.state.referenceNumber;
+    }
+  }
+}
+Example of application-confirmation.component.html
+html
+
+Verify
+
+Open In Editor
+Run
+Copy code
+<div class="confirmation-container">
+  <h2 class="text-2xl font-bold">Application Confirmation</h2>
+  <p>Your application has been submitted successfully!</p>
+  <p>Reference Number: {{ referenceNumber }}</p>
+  <a [href]="paymentUrl" class="btn btn-primary">Proceed to Payment</a>
+</div>
+Final Steps
+Run the Application: Start your Angular application using:
+
+bash
+
+Verify
+
+Open In Editor
+Run
+Copy code
+ng serve
+Test the Functionality: Navigate to http://localhost:4200/service-registration and test the form submission and file uploads.
+
+Conclusion
+You now have a fully functional Angular component for service registration, complete with form handling, file uploads, and navigation to a confirmation page. You can further enhance the UI and functionality based on your requirements. If you have any specific features or styles in mind, feel free to ask!
