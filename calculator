@@ -1,0 +1,196 @@
+Here’s the React code converted into an Angular 19 component, maintaining the functionality and styling from the provided image.
+
+---
+
+### Steps Taken:
+1. Converted the React component to an Angular component.
+2. Used Angular's `[(ngModel)]` for two-way binding.
+3. Retained logic for calculating household and commercial bills.
+4. Integrated TailwindCSS styles as seen in the image.
+5. Used conditional rendering with `*ngIf` for dynamic elements.
+
+---
+
+### **1. Install Prerequisites**  
+Make sure TailwindCSS is set up in your Angular project. If not:  
+```bash
+npm install -D tailwindcss postcss autoprefixer
+npx tailwindcss init
+```
+
+Update `tailwind.config.js`:  
+```js
+module.exports = {
+  content: [
+    "./src/**/*.{html,ts}",
+  ],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+}
+```
+
+Add Tailwind directives to `styles.css`:
+```css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+```
+
+---
+
+### **2. Component Code**
+
+Create a new Angular component:
+
+```bash
+ng generate component calculate-bills
+```
+
+Replace the content of `calculate-bills.component.ts`:
+
+#### **calculate-bills.component.ts**
+```typescript
+import { Component } from '@angular/core';
+
+@Component({
+  selector: 'app-calculate-bills',
+  templateUrl: './calculate-bills.component.html',
+  styleUrls: ['./calculate-bills.component.css']
+})
+export class CalculateBillsComponent {
+  connectionType: string = '';
+  units: string = '';
+  bill: number | null = null;
+
+  calculateHouseholdBill(units: number): number | null {
+    if (units <= 50) return 0;
+    if (units <= 100) return (units - 50) * 2;
+    if (units <= 300) return 50 * 2 + (units - 100) * 4;
+    if (units > 100000) return null;
+    return 50 * 2 + 200 * 4 + (units - 300) * 6;
+  }
+
+  calculateCommercialBill(units: number): number | null {
+    if (units <= 20) return 0;
+    if (units <= 100) return (units - 20) * 4;
+    if (units <= 200) return 80 * 4 + (units - 100) * 6;
+    if (units > 100000) return null;
+    return 80 * 4 + 100 * 6 + (units - 200) * 8;
+  }
+
+  handleCalculate(): void {
+    const unitNumber = Number(this.units);
+    if (this.connectionType === 'household') {
+      this.bill = this.calculateHouseholdBill(unitNumber);
+    } else if (this.connectionType === 'commercial') {
+      this.bill = this.calculateCommercialBill(unitNumber);
+    }
+  }
+}
+```
+
+---
+
+### **3. Template**
+
+Replace `calculate-bills.component.html`:
+
+#### **calculate-bills.component.html**
+```html
+<div class="relative w-full h-screen">
+  <!-- Background Image -->
+  <img src="assets/bg-2.jpeg" alt="background" class="absolute top-0 left-0 w-full h-full object-cover brightness-50" />
+
+  <!-- Content -->
+  <div class="relative flex items-center justify-center h-full">
+    <div class="backdrop-blur-md border border-gray-300 rounded-lg p-8 w-full max-w-4xl flex flex-col lg:flex-row text-gray-300">
+      
+      <!-- Left Section -->
+      <div class="w-full lg:w-1/2 lg:pr-8 mb-6 lg:mb-0">
+        <h2 class="text-2xl lg:text-3xl font-bold mb-6">Electricity Bill Calculator</h2>
+
+        <!-- Connection Type Dropdown -->
+        <div class="mb-6">
+          <select 
+            class="w-full p-2 bg-transparent border rounded" 
+            [(ngModel)]="connectionType">
+            <option value="" disabled>Select Connection Type</option>
+            <option value="household">Household</option>
+            <option value="commercial">Commercial</option>
+          </select>
+        </div>
+
+        <!-- Input for Units -->
+        <div *ngIf="connectionType">
+          <input 
+            type="number" 
+            class="w-full p-2 border bg-transparent rounded" 
+            placeholder="Enter units consumed"
+            [(ngModel)]="units" />
+          
+          <div class="text-right mt-4">
+            <button 
+              class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded" 
+              (click)="handleCalculate()">
+              Calculate Bill
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Section -->
+      <div class="w-full lg:w-1/2 flex items-center justify-center">
+        <div *ngIf="bill !== null" class="text-center">
+          <p class="text-2xl font-semibold">
+            <span class="text-gray-400">Total Bill: </span>
+            ₹{{ bill }}
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+```
+
+---
+
+### **4. Styles**
+
+Add global styles for this component:
+
+#### **calculate-bills.component.css**
+```css
+.bg-full {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.bg-transparent {
+  background: transparent;
+}
+```
+
+---
+
+### **5. Run the Application**
+
+Run your Angular application:
+
+```bash
+ng serve
+```
+
+---
+
+### **Output**
+The application will look similar to the image:
+- A background image with blur and opacity effects.
+- A form with a dropdown to select the connection type.
+- Input to enter units consumed.
+- A button to calculate the bill.
+- The result is displayed dynamically on the right side.
+
+Let me know if you need further adjustments! 🚀
