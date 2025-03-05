@@ -1,0 +1,227 @@
+Sure! Let's replace Grafana and Prometheus with Splunk, Dynatrace, or OBM (Operations Bridge Manager) to collect, analyze, and correlate traces, metrics, and logs in your Spring Boot API application.
+
+
+---
+
+🔹 Updated Tech Stack
+
+Instead of Prometheus & Grafana, we'll now use: ✅ Traces → Dynatrace OneAgent or OpenTelemetry with Splunk APM
+✅ Metrics → Dynatrace, Splunk Observability, or OBM
+✅ Logs → Splunk or OBM
+
+
+---
+
+🔹 Step 1: Set Up OpenTelemetry in Spring Boot
+
+1️⃣ Add OpenTelemetry & Splunk/Dynatrace Dependencies
+
+Update your pom.xml:
+
+<dependency>
+    <groupId>io.opentelemetry</groupId>
+    <artifactId>opentelemetry-exporter-otlp</artifactId>
+    <version>1.24.0</version>
+</dependency>
+<dependency>
+    <groupId>com.splunk</groupId>
+    <artifactId>splunk-otel-java</artifactId>
+    <version>1.14.0</version>
+</dependency>
+<dependency>
+    <groupId>com.dynatrace.opentelemetry</groupId>
+    <artifactId>dynatrace-opentelemetry</artifactId>
+    <version>1.9.0</version>
+</dependency>
+
+
+---
+
+2️⃣ Configure OpenTelemetry for Splunk/Dynatrace (application.yml)
+
+For Splunk
+
+otel:
+  service:
+    name: "springboot-api"
+  exporter:
+    otlp:
+      endpoint: "http://splunk-otel-collector:4317"
+
+For Dynatrace
+
+otel:
+  exporter:
+    otlp:
+      endpoint: "https://your-dynatrace-tenant/api/v2/otlp"
+      headers:
+        Authorization: "Api-Token YOUR_DYNATRACE_API_TOKEN"
+
+
+---
+
+🔹 Step 2: Set Up API Logging and Monitoring
+
+Modify your Spring Boot Controller to track API failures, logs, traces, and latency.
+
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.Tracer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api")
+public class PaymentController {
+
+    private static final Logger logger = LoggerFactory.getLogger(PaymentController.class);
+    private final Tracer tracer;
+
+    public PaymentController(Tracer tracer) {
+        this.tracer = tracer;
+    }
+
+    @GetMapping("/processPayment/{customerId}")
+    public String processPayment(@PathVariable String customerId) {
+        Span span = tracer.spanBuilder("ProcessPaymentAPI").startSpan();
+        span.setAttribute("customer.id", customerId);
+
+        try {
+            long start = System.currentTimeMillis();
+
+            if (Math.random() < 0.3) {  // Simulating 30% API failure
+                throw new RuntimeException("Payment gateway error!");
+            }
+
+            Thread.sleep(200);  // Simulate processing delay
+            String paymentId = "PAY-" + System.currentTimeMillis();
+
+            long duration = System.currentTimeMillis() - start;
+            span.setAttribute("response.time.ms", duration);
+            span.setAttribute("payment.id", paymentId);
+
+            logger.info("Payment Successful for Customer: {}", customerId);
+
+            return "Payment Successful! Payment ID: " + paymentId;
+        } catch (Exception e) {
+            span.recordException(e);
+            span.setAttribute("error", true);
+            logger.error("Payment failed for Customer: {}. Error: {}", customerId, e.getMessage());
+            throw new RuntimeException("Payment failed!");
+        } finally {
+            span.end();
+        }
+    }
+}
+
+
+---
+
+🔹 Step 3: Configure Splunk/Dynatrace for Logs and Metrics
+
+1️⃣ Configure Splunk Log Forwarding
+
+For Splunk HEC (HTTP Event Collector)
+
+Modify logback.xml to send logs to Splunk:
+
+<configuration>
+    <appender name="SPLUNK" class="com.splunk.logging.HttpEventCollectorLogbackAppender">
+        <url>https://your-splunk-url:8088</url>
+        <token>Your-Splunk-HEC-Token</token>
+        <index>your-index</index>
+        <sourcetype>spring-boot-logs</sourcetype>
+    </appender>
+
+    <root level="info">
+        <appender-ref ref="SPLUNK"/>
+    </root>
+</configuration>
+
+📌 Splunk Query to Monitor API Failures
+
+index="your-index" sourcetype="spring-boot-logs" "Payment failed"
+
+
+---
+
+2️⃣ Configure Dynatrace OneAgent
+
+Run Dynatrace OneAgent on your server
+
+wget -O Dynatrace-OneAgent.sh "https://your-dynatrace-url/api/v1/deployment/installer/agent/unix/latest?arch=x86&flavor=default"
+chmod +x Dynatrace-OneAgent.sh
+sudo ./Dynatrace-OneAgent.sh
+
+🔎 Check Logs in Dynatrace:
+
+Navigate to: Dynatrace > Log Monitoring
+
+Query: ProcessPaymentAPI AND error:true
+
+
+
+---
+
+3️⃣ Configure OBM for Log Collection
+
+Install OBM Agent
+
+wget -O obm-agent.sh "https://your-obm-url/install.sh"
+chmod +x obm-agent.sh
+sudo ./obm-agent.sh
+
+Go to OBM Console > Log Insights
+
+Search "ProcessPaymentAPI failed"
+
+
+
+---
+
+🔹 Step 4: View API Traces, Metrics, and Logs
+
+🔎 In Splunk
+
+Traces → Search ProcessPaymentAPI
+
+Logs → Search "Payment failed"
+
+Metrics → Search avg(response.time.ms)
+
+
+🔎 In Dynatrace
+
+Traces → View API trace (ProcessPaymentAPI)
+
+Logs → Go to Log Monitoring
+
+Metrics → View response.time.ms
+
+
+🔎 In OBM
+
+Traces → Application Performance Monitoring
+
+Logs → Log Analytics
+
+Metrics → API Failure Rate
+
+
+
+---
+
+🚀 Summary: What We Achieved
+
+✅ Captured API Failures, Traces, and Latency
+✅ Stored Logs in Splunk/Dynatrace/OBM
+✅ Correlated Logs, Metrics, and Traces
+✅ Visualized API Failures Without Prometheus/Grafana
+
+
+---
+
+💡 Next Steps
+
+Would you like a pre-configured Splunk or Dynatrace dashboard JSON for easy import? 🚀
+
